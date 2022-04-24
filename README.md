@@ -1,4 +1,11 @@
 # NID-Image-to-data-extraction
+The project uses pytesseract module to convert image into text and regular expression to extract specific fields from the extracted text.
+
+## Libraries
+- pytesseract
+- cv2
+- re
+- filedialog
 
 ## How to run code in your windows machine
 
