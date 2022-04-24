@@ -13,3 +13,5 @@ pip3 install -r requirements.txt
 ```
 Step-4: Now you can run the project.:+1:
 
+
+![Farmers Market Finder Demo](demo/run.gif)
