@@ -1,5 +1,6 @@
 import inspect
 import textwrap
+from unittest import result
 import cv2
 from pyparsing import str_type
 import pytesseract
@@ -8,32 +9,41 @@ from tkinter import filedialog
 import string
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
+TESSDATA_PREFIX = 'C:/Program Files/Tesseract-OCR'
 # Storing image path 
-file_path = filedialog.askopenfilename()
+image_path = filedialog.askopenfilename()
 
 # Reading image file using cv2.imread function..............
-img = cv2.imread(file_path)
-
+def read_image(img_path):
+    return cv2.imread(img_path)
 
 
 # img = cv2.resize(img, None, fx= 0.5, fy=0.5)
 
 #Converting image to BGR2GRAY color..................
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def gray_image(image):
+    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
 #Tuning image with some filter for better result............
-adaptiv_threshold = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 89,28)
+def threshold(gray_image):
+    adaptiv_threshold = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 89,28)
+    return adaptiv_threshold
 
 #Display the image...................
-# cv2.imshow("gray", gray)
-# cv2.imshow("image", img)
-cv2.imshow(file_path, adaptiv_threshold)
+def display(title, image):
+    return cv2.imshow(title, image)
 
 #Converting image to string.....................
-text = pytesseract.image_to_string(adaptiv_threshold, lang= 'eng')
-ben_text = pytesseract.image_to_string(adaptiv_threshold, lang= 'ben')
-fornt_text = text + ben_text
-print (fornt_text)
+lang = "eng+ben"
+def image_to_text(threshold_image):
+    result = pytesseract.image_to_string(threshold_image, lang= lang)
+    return result
+
+img = read_image(image_path)
+img = gray_image(img)
+img = threshold(img)
+text = image_to_text(img)
+print (text)
 
 #Removing All single charecter from text...............
 text = re.sub(r'\b[a-zA-Z]\b','', text)
@@ -60,14 +70,14 @@ father_name_condition = r"\bপিতা:.*"
 mother_name_condition = r"\bমাতা:.*"
 
 #English data veriable...................
-name = re.findall(name_condition, fornt_text, re.M)
-birthday = re.findall(birthday_condition, fornt_text, re.M)
-id_no = re.findall(id_no_condition, fornt_text, re.M)
+name = re.findall(name_condition, text, re.M)
+birthday = re.findall(birthday_condition, text, re.M)
+id_no = re.findall(id_no_condition, text, re.M)
 
 #Bengali data veriable......................
-ben_name = re.findall(bengali_name_condition, fornt_text, re.MULTILINE)
-ben_father_name = re.findall(father_name_condition, fornt_text, re.MULTILINE)
-ben_mother_name = re.findall(mother_name_condition, fornt_text, re.MULTILINE)
+ben_name = re.findall(bengali_name_condition, text, re.MULTILINE)
+ben_father_name = re.findall(father_name_condition, text, re.MULTILINE)
+ben_mother_name = re.findall(mother_name_condition, text, re.MULTILINE)
 
 # Creating a list to holds all the data in once......................
 
@@ -110,7 +120,7 @@ print (text_dict)
 
 
 
-
+display(image_path, img)
 
 # Holding the displayed image visible..................
 cv2.waitKey(0)
