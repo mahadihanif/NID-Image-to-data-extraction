@@ -46,7 +46,7 @@ img = resized_image(img)
 img = gray_image(img)
 img = threshold(img)
 text = image_to_text(img)
-print (text)
+# print (text)
 
 #Removing All single charecter from text...............
 text = re.sub(r'\b[a-zA-Z]\b','', text)
@@ -76,18 +76,22 @@ mother_name_condition = r"\bমাতা:.*"
 name = re.findall(name_condition, text, re.M)
 if name:
     name = str(name[0]).replace(',','.')
-    print(name)
     name = re.split(':', name)[1]
+    name = re.sub("^\s", "", name)
     
 birthday = re.findall(birthday_condition, text, re.M)
 if birthday:
     birthday = str(birthday[0]).replace(',','.')
-    birthday = re.split(':', birthday)[1]
+    # birthday = re.split(':', birthday)[1]
+    birthday = re.findall('\d.*\d$', birthday)
+    birthday = str(birthday[0])
+
 
 id_no = re.findall(id_no_condition, text, re.M)
 if id_no:
     id_no = str(id_no[0]).replace(',','.')
     id_no = re.split(':', id_no)[1]
+    id_no = re.sub('^\s', '', id_no)
 
 #Bengali data veriable......................
 ben_name = re.findall(bengali_name_condition, text, re.MULTILINE)
@@ -120,9 +124,6 @@ if id_no:
 # Printing Output................
 
 print(user)
-
-
-
 
 display(image_path, img)
 
