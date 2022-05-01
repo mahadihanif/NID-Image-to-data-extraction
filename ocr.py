@@ -1,11 +1,12 @@
-import inspect
-import textwrap
+from cgi import test
+import os
 from unittest import result
 import cv2
 from pyparsing import str_type
 import pytesseract
 import re
 from tkinter import filedialog 
+from PIL import Image
 import string
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
@@ -17,8 +18,9 @@ image_path = filedialog.askopenfilename()
 def read_image(img_path):
     return cv2.imread(img_path)
 
-
-# img = cv2.resize(img, None, fx= 0.5, fy=0.5)
+def resized_image(image):
+    image = cv2.resize(image, dsize=(600,433))
+    return image
 
 #Converting image to BGR2GRAY color..................
 def gray_image(image):
@@ -40,6 +42,7 @@ def image_to_text(threshold_image):
     return result
 
 img = read_image(image_path)
+img = resized_image(img)
 img = gray_image(img)
 img = threshold(img)
 text = image_to_text(img)
@@ -47,7 +50,7 @@ print (text)
 
 #Removing All single charecter from text...............
 text = re.sub(r'\b[a-zA-Z]\b','', text)
-# print (text)
+print (text)
 
 
 # Removing All the special carecters from the text...................
@@ -71,8 +74,20 @@ mother_name_condition = r"\bমাতা:.*"
 
 #English data veriable...................
 name = re.findall(name_condition, text, re.M)
+if name:
+    name = str(name[0]).replace(',','.')
+    print(name)
+    name = re.split(':', name)[1]
+    
 birthday = re.findall(birthday_condition, text, re.M)
+if birthday:
+    birthday = str(birthday[0]).replace(',','.')
+    birthday = re.split(':', birthday)[1]
+
 id_no = re.findall(id_no_condition, text, re.M)
+if id_no:
+    id_no = str(id_no[0]).replace(',','.')
+    id_no = re.split(':', id_no)[1]
 
 #Bengali data veriable......................
 ben_name = re.findall(bengali_name_condition, text, re.MULTILINE)
@@ -81,41 +96,30 @@ ben_mother_name = re.findall(mother_name_condition, text, re.MULTILINE)
 
 # Creating a list to holds all the data in once......................
 
+user = {
+    "Name" : None,
+    "Date of Birth" : None,
+    "NID No" : None,
+    "Address" : None,
+}
+
+
 if name:
-    text_list = name
+    user["Name"] = name
 
 if birthday:
-    text_list= text_list + birthday   
+    user["Date of Birth"] = birthday   
 
 if id_no:
-    text_list= text_list + id_no
+    user["NID No"] = id_no
+    
+      
 
-if ben_name:
-    text_list= text_list + ben_name    
-
-if ben_father_name:
-    text_list= text_list + ben_father_name    
-
-if ben_mother_name:
-    text_list= text_list + ben_mother_name    
-
-
-print (text_list)
-
-
-
-# Converting text_list values to text_dict...................
-text_dict = {}
-for t in text_list:
-    d = dict(x.split(":") for x in t.split("\\n"))
-    for k, v in d.items():
-       text_dict[k] = v
 
 
 # Printing Output................
 
-
-print (text_dict)
+print(user)
 
 
 
