@@ -1,8 +1,6 @@
-from cgi import test
 import os
 from unittest import result
 import cv2
-from pyparsing import str_type
 import pytesseract
 import re
 from tkinter import filedialog 
@@ -41,19 +39,7 @@ def image_to_text(threshold_image):
     result = pytesseract.image_to_string(threshold_image, lang= lang)
     return result
 
-
-
-# def name_extraction(text):
-#     name_condition = r"\bName.*"
-#     name = re.findall(name_condition, text, re.M)
-#     print(len(name))
-#     if len(name) >0:
-#         name = str(name[0]).replace(',','.')
-#         name = re.split(':', name)[1]
-#         name = re.sub("^\s", "", name)
-#     else:
-#         name = 'none'
-#     return name     
+    
 
 def name_extraction(text):
     name_condition = r"\bName.*"
@@ -61,8 +47,8 @@ def name_extraction(text):
     name = re.findall(name_condition, text, re.M)
     capital_name = re.findall(capital_name_condition, text, re.M)
     # print(len(name))
-    # print(len(capital_name))
-    # print(capital_name)
+    print(len(capital_name))
+    print(capital_name)
     if len(name) >0:
         if len(name[0])>6:
             name = str(name[0]).replace(',','.')
@@ -72,32 +58,36 @@ def name_extraction(text):
             for n in capital_name:
                 if len(n)>6:
                     print(n)
-                    name = n       
+                    name = n  
+                         
+    elif len(capital_name)>0:
+        for n in capital_name:
+            if len(n)>6& len(n)<20:
+                name = n
+
     else:
         name = 'none'
     return name
 
-
 def birthday_extraction(text):
-    # birthday_condition = r"\bDat.*"
     birthday_condition = r"\d{2}\s[A-Z][a-z]{2}\s\d{4}"
     birthday = re.findall(birthday_condition, text, re.M)
-    # print (birthday)
+    print (birthday)
     if birthday:
-        # birthday = str(birthday[0]).replace(',','.')
-        # birthday = re.findall('\d.*\d$', birthday)
         birthday = str(birthday[0])
     return birthday
 
 
 
 def nid_extraction(text):
-    id_no_condition = r"\d{17}|\d{13}|\d{3}\s\d{3}\s\d{4}"
+    id_no_condition = r"\d{17}|\d{13}|\d{10}|\d{3}\s\d{3}\s\d{4}"
     id_no = re.findall(id_no_condition, text, re.M) 
     if id_no:
         if len(id_no[0])==17:
             id_no = str(id_no[0])
         elif len(id_no[0])==13:
+            id_no = str(id_no[0])
+        elif len(id_no[0])==10:
             id_no = str(id_no[0])
         elif len(id_no[0]) ==12:
             id_no = str(id_no[0])   
@@ -108,7 +98,6 @@ def nid_extraction(text):
 
 
 img = read_image(image_path)
-img = resized_image(img)
 img = gray_image(img)
 img = threshold(img)
 text = image_to_text(img)
@@ -125,26 +114,7 @@ print (text)
 # print (ben_text)
 
 
-
-
-
-
-
-
-# Bengali Text Conditions....................
-# bengali_name_condition = r"\bনাম.*"
-# father_name_condition = r"\bপিতা:.*"
-# mother_name_condition = r"\bমাতা:.*"
-
-
-    
-
-#Bengali data veriable......................
-# ben_name = re.findall(bengali_name_condition, text, re.MULTILINE)
-# ben_father_name = re.findall(father_name_condition, text, re.MULTILINE)
-# ben_mother_name = re.findall(mother_name_condition, text, re.MULTILINE)
-
-# Creating a list to holds all the data in once......................
+#Creating a User dictionary to hold all the data in once......................
 
 user = {
     "Name" : None,
@@ -152,6 +122,7 @@ user = {
     "NID No" : None,
     "Address" : None,
 }
+
 name = name_extraction(text)
 birthday = birthday_extraction(text)
 nid = nid_extraction(text)
@@ -172,7 +143,7 @@ if nid:
 # Printing Output................
 
 print(user)
-
+img = resized_image(img)
 display(image_path, img)
 
 # Holding the displayed image visible..................
