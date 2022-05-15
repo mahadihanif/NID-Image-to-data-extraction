@@ -1,14 +1,15 @@
 import os
 from unittest import result
 import cv2
+import numpy as np
 import pytesseract
 import re
 from tkinter import filedialog 
 from PIL import Image
 import string
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-TESSDATA_PREFIX = 'C:/Program Files/Tesseract-OCR'
+pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+TESSDATA_PREFIX = r'C:\\Program Files\\Tesseract-OCR\\tessdata'
 # Storing image path 
 image_path = filedialog.askopenfilename()
 
@@ -16,8 +17,27 @@ image_path = filedialog.askopenfilename()
 def read_image(img_path):
     return cv2.imread(img_path)
 
+def crop_image(img):
+    copy_img = img.copy()
+    lower = np.array([60,60,60])
+    higher = np.array([250,250,250])
+    mask = cv2.inRange(img, lower,higher)     
+    # Finding Bounding Box
+    cont, _= cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    # cont_img = cv2.drawContours(img, cont, -1,255,3)
+    # Finding Max Contor
+    c = max(cont, key=cv2.contourArea)
+    x,y,w,h = cv2.boundingRect(c)
+    cv2.rectangle(img,(x,y), (x+w, y+h), (0,255,0),3)
+    # Cropping image
+    cropped_img = copy_img[y:y+h, x:x+w]
+    return cropped_img
+
+
 def resized_image(image):
-    image = cv2.resize(image, dsize=(600,435))
+    image = cv2.resize(image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+    # image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    # image = cv2.resize(image, dsize=(600,435))
     return image
 
 #Converting image to BGR2GRAY color..................
@@ -34,7 +54,7 @@ def display(title, image):
     return cv2.imshow(title, image)
 
 #Converting image to string.....................
-lang = "eng+ben"
+lang = "ben+eng"
 def image_to_text(threshold_image):
     result = pytesseract.image_to_string(threshold_image, lang= lang)
     return result
@@ -96,8 +116,17 @@ def nid_extraction(text):
     return id_no
 
 
+def adderss_extraction(text):
+    condition = r"\bঠিকানা.*রক্তের\b"
+    address = re.findall(condition, text, re.DOTALL)
+    print(address)
+    addr = str(address).split("\\n")
+    addr = addr[:-1]
+    return addr
 
+# def fontData(img)
 img = read_image(image_path)
+img = resized_image(img)
 img = gray_image(img)
 img = threshold(img)
 text = image_to_text(img)
@@ -126,7 +155,8 @@ user = {
 name = name_extraction(text)
 birthday = birthday_extraction(text)
 nid = nid_extraction(text)
-
+add = adderss_extraction(text)
+print(add)
 if name:
     user["Name"] = name
 
@@ -135,6 +165,8 @@ if birthday:
 
 if nid:
     user["NID No"] = nid
+if add:
+    user["Address"] = add
     
       
 
@@ -143,7 +175,7 @@ if nid:
 # Printing Output................
 
 print(user)
-img = resized_image(img)
+# img = resized_image(img)
 display(image_path, img)
 
 # Holding the displayed image visible..................
