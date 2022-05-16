@@ -8,7 +8,7 @@ from tkinter import filedialog
 from PIL import Image
 import string
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 TESSDATA_PREFIX = r'C:\\Program Files\\Tesseract-OCR\\tessdata'
 # Storing image path 
 image_path = filedialog.askopenfilename()
@@ -54,7 +54,7 @@ def display(title, image):
     return cv2.imshow(title, image)
 
 #Converting image to string.....................
-lang = "ben+eng"
+lang = "eng+ben"
 def image_to_text(threshold_image):
     result = pytesseract.image_to_string(threshold_image, lang= lang)
     return result
@@ -67,8 +67,8 @@ def name_extraction(text):
     name = re.findall(name_condition, text, re.M)
     capital_name = re.findall(capital_name_condition, text, re.M)
     # print(len(name))
-    print(len(capital_name))
-    print(capital_name)
+    # print(len(capital_name))
+    # print(capital_name)
     if len(name) >0:
         if len(name[0])>6:
             name = str(name[0]).replace(',','.')
@@ -77,7 +77,7 @@ def name_extraction(text):
         elif len(capital_name)>0:
             for n in capital_name:
                 if len(n)>6:
-                    print(n)
+                    # print(n)
                     name = n  
                          
     elif len(capital_name)>0:
@@ -92,7 +92,7 @@ def name_extraction(text):
 def birthday_extraction(text):
     birthday_condition = r"\d{2}\s[A-Z][a-z]{2}\s\d{4}"
     birthday = re.findall(birthday_condition, text, re.M)
-    print (birthday)
+    # print (birthday)
     if birthday:
         birthday = str(birthday[0])
     return birthday
@@ -100,7 +100,8 @@ def birthday_extraction(text):
 
 
 def nid_extraction(text):
-    id_no_condition = r"\d{17}|\d{13}|\d{10}|\d{3}\s\d{3}\s\d{4}"
+    # id_no_condition = r"\d{17}|\d{13}|\d{10}|\d{3}\s\d{3}\s\d{4}"
+    id_no_condition = r"[0-9]{17}|[0-9]{13}|[0-9]{10}|[0-9]{3}\s[0-9]{3}\s[0-9]{4}"
     id_no = re.findall(id_no_condition, text, re.M) 
     if id_no:
         if len(id_no[0])==17:
@@ -117,16 +118,17 @@ def nid_extraction(text):
 
 
 def adderss_extraction(text):
-    condition = r"\bঠিকানা.*রক্তের\b"
+    condition = r"\bঠিকানা[^\n]+\n[^\n]+"
+    # condition = r"\bঠিকানা.*রক্তের\b"
     address = re.findall(condition, text, re.DOTALL)
     print(address)
-    addr = str(address).split("\\n")
-    addr = addr[:-1]
-    return addr
+    # addr = str(address).split("\\n")
+    # addr = addr[:-1]
+    return address
 
 # def fontData(img)
 img = read_image(image_path)
-img = resized_image(img)
+img = crop_image(img)
 img = gray_image(img)
 img = threshold(img)
 text = image_to_text(img)
