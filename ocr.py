@@ -1,71 +1,88 @@
-import os
-from unittest import result
 import cv2
 import numpy as np
 import pytesseract
 import re
 from tkinter import filedialog 
-from PIL import Image
-import string
+
+
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 TESSDATA_PREFIX = r'C:\\Program Files\\Tesseract-OCR\\tessdata'
 # Storing image path 
 image_path = filedialog.askopenfilename()
 
-# Reading image file using cv2.imread function..............
-def read_image(img_path):
-    return cv2.imread(img_path)
 
-def crop_image(img):
+######..................***Start of font data functions***....................
+
+
+# Reading image file using cv2.imread function..............
+def read_font_image(img_path):
+    img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+
+#..................*************....................
     copy_img = img.copy()
     lower = np.array([60,60,60])
     higher = np.array([250,250,250])
     mask = cv2.inRange(img, lower,higher)     
-    # Finding Bounding Box
-    cont, _= cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    
+    cont, _= cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)       # Finding Bounding Box
     # cont_img = cv2.drawContours(img, cont, -1,255,3)
-    # Finding Max Contor
-    c = max(cont, key=cv2.contourArea)
+
+    c = max(cont, key=cv2.contourArea)      # Finding Max Contor.........
     x,y,w,h = cv2.boundingRect(c)
-    cv2.rectangle(img,(x,y), (x+w, y+h), (0,255,0),3)
-    # Cropping image
-    cropped_img = copy_img[y:y+h, x:x+w]
-    return cropped_img
+    # cv2.rectangle(img,(x,y), (x+w, y+h), (0,255,0),3)
+
+    cropped_img = copy_img[y:y+h, x:x+w]        # Cropping image..........
+    
+#..................*************....................
+
+    cropped_img = cv2.resize(cropped_img, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+    # cropped_img = cv2.resize(cropped_img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
 
-def resized_image(image):
-    image = cv2.resize(image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-    # image = cv2.resize(image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    # image = cv2.resize(image, dsize=(600,435))
-    return image
+#..................*************....................
 
-#Converting image to BGR2GRAY color..................
-def gray_image(image):
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray_image = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)     #Converting image to BGR2GRAY color..................
 
-#Tuning image with some filter for better result............
-def threshold(gray_image):
-    adaptiv_threshold = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 89,28)
+#..................*************....................
+
+    adaptiv_threshold = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 109,29)       #Appling Adapting Threshold for better result............
     return adaptiv_threshold
+
+#..................*************....................
+
+def thin_font(image):
+    image = cv2.bitwise_not(image)
+    kernel = np.ones((2,2), np.uint8)
+    image = cv2.erode(image, kernel, iterations= 1)
+    image = cv2.bitwise_not(image)
+    return (image)
+
+
+#..................*************....................
+
+
+
+# Converting image to string.....................
+
+
+def image_to_text(threshold_image):
+    result = pytesseract.image_to_string(threshold_image, lang = "eng")
+    return result
 
 #Display the image...................
 def display(title, image):
     return cv2.imshow(title, image)
 
-#Converting image to string.....................
-lang = "eng+ben"
-def image_to_text(threshold_image):
-    result = pytesseract.image_to_string(threshold_image, lang= lang)
-    return result
 
-    
+#..................*************....................
+
 
 def name_extraction(text):
-    name_condition = r"\bName.*"
-    capital_name_condition = r"\b[A-Z].*[A-Z]\b"
+    name_condition = r"\bName:.*"
+    capital_name_condition = r"\b[A-Z][A-Z].*[A-Z][A-Z][A-Z]\b"
     name = re.findall(name_condition, text, re.M)
-    capital_name = re.findall(capital_name_condition, text, re.M)
+    capital_name = re.findall(capital_name_condition, text, re.M) 
     # print(len(name))
     # print(len(capital_name))
     # print(capital_name)
@@ -86,17 +103,24 @@ def name_extraction(text):
                 name = n
 
     else:
-        name = 'none'
+        name = 'None'
     return name
 
-def birthday_extraction(text):
-    birthday_condition = r"\d{2}\s[A-Z][a-z]{2}\s\d{4}"
-    birthday = re.findall(birthday_condition, text, re.M)
-    # print (birthday)
-    if birthday:
-        birthday = str(birthday[0])
-    return birthday
 
+#..................*************....................
+
+
+
+
+def dob_extraction(text):
+    dob_condition = r"[0-3][0-9] [A-Z][a-z]{2} [1-3][0-9]{3}"
+    dob = re.findall(dob_condition, text, re.M)
+    # print (birthday)
+    if dob:
+        dob = str(dob[0])
+    return dob
+
+#..................*************....................
 
 
 def nid_extraction(text):
@@ -113,24 +137,14 @@ def nid_extraction(text):
         elif len(id_no[0]) ==12:
             id_no = str(id_no[0])   
     else:
-        id_no ="none"    
+        id_no ="None"    
     return id_no
 
 
-def adderss_extraction(text):
-    condition = r"\bঠিকানা[^\n]+\n[^\n]+"
-    # condition = r"\bঠিকানা.*রক্তের\b"
-    address = re.findall(condition, text, re.DOTALL)
-    print(address)
-    # addr = str(address).split("\\n")
-    # addr = addr[:-1]
-    return address
 
 # def fontData(img)
-img = read_image(image_path)
-img = crop_image(img)
-img = gray_image(img)
-img = threshold(img)
+img = read_font_image(image_path)
+img = thin_font(img)
 text = image_to_text(img)
 # print (text)
 
@@ -145,6 +159,87 @@ print (text)
 # print (ben_text)
 
 
+    
+
+######..................***End of font data functions***....................
+
+
+
+
+######..................***Start of back data functions***....................
+
+
+image_path = filedialog.askopenfilename()
+input_image = cv2.resize(cv2.imread(image_path), None, fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
+# input_image = cv2.resize(cv2.imread(image_path), None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+
+
+def match_and_alignImage(imgPath , img):
+    per = 25
+    imgQuery = cv2.imread(imgPath)
+    
+    h,w,c = imgQuery.shape
+    orb = cv2.ORB_create(5000)
+    kp1 , des1 = orb.detectAndCompute(imgQuery, None)
+    kp2, des2 = orb.detectAndCompute(img, None)
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+    matches = bf.match(des2, des1)
+    matches = sorted(matches, key=lambda x: x.distance)
+    good = matches[:int(len(matches)*(per/100))]
+
+    srcPoints = np.float32([kp2[m.queryIdx].pt for m in good]).reshape(-1,1,2)
+    dstPoints = np.float32([kp1[m.trainIdx].pt for m in good]).reshape(-1,1,2)
+
+    M, _ = cv2.findHomography(srcPoints, dstPoints, cv2.RANSAC, 5.0)
+    imgScan = cv2.warpPerspective(img, M, (w,h))
+    
+    imgScan = cv2.cvtColor(imgScan, cv2.COLOR_BGR2GRAY)
+    imgScan = cv2.adaptiveThreshold(imgScan, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 111,29)
+    
+    
+    return imgScan
+
+
+
+def get_data(alignImage, roi):
+
+    for x,r in enumerate(roi):
+
+        imgCrop = alignImage[r[0][1]:r[1][1], r[0][0]:r[1][0]]
+        # cv2.imshow(str(x), imgCrop)  
+
+    imgCrop = cv2.resize(imgCrop, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+    imgCrop = thin_font(imgCrop)
+    # cv2.imshow("output2",imgCrop)
+    output = pytesseract.image_to_string(imgCrop, lang="ben",config="--psm 6")
+
+    return output
+
+
+def get_address():
+    roi_smart_back = [[(38, 350), (1294, 642), 'bText', 'Address']]
+    roi_normal_back = [[(0, 252), (2042, 540), 'bText', 'AddNS']]
+
+    path_normal_back_img = 'query_img\\nsBack.jpg'
+    path_smart_back_img = 'query_img\\hback.png'
+    align_image = match_and_alignImage(path_normal_back_img, input_image)
+    add = get_data(align_image, roi_normal_back)
+    print(len(add))
+    if add == "":
+        align_image = match_and_alignImage(path_smart_back_img, input_image)
+        add = get_data(align_image, roi_smart_back)
+        print(add)
+        return add
+    else:
+        # print(add)
+        return add
+######..................***End of back data functions***......................
+
+
+
+
+#..................*************....................
+
 #Creating a User dictionary to hold all the data in once......................
 
 user = {
@@ -155,30 +250,32 @@ user = {
 }
 
 name = name_extraction(text)
-birthday = birthday_extraction(text)
+dob = dob_extraction(text)
 nid = nid_extraction(text)
-add = adderss_extraction(text)
-print(add)
+add = get_address()
+
 if name:
     user["Name"] = name
 
-if birthday:
-    user["Date of Birth"] = birthday   
+if dob:
+    user["Date of Birth"] = dob   
 
 if nid:
     user["NID No"] = nid
 if add:
+    add = str(add).replace('\n','')
     user["Address"] = add
-    
-      
 
 
 
 # Printing Output................
 
 print(user)
-# img = resized_image(img)
-display(image_path, img)
+
+#..................*************....................
+
+
+# display(image_path, img)
 
 # Holding the displayed image visible..................
 cv2.waitKey(0)
