@@ -3,15 +3,18 @@ import numpy as np
 import pytesseract
 import re
 from tkinter import filedialog 
+from datetime import datetime
 
 
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 TESSDATA_PREFIX = r'C:\\Program Files\\Tesseract-OCR\\tessdata'
 # Storing image path 
-image_path = filedialog.askopenfilename()
+print("please select NID font image")
+font_image_path = filedialog.askopenfilename()
 
-
+print("please select NID back image")
+back_image_path = filedialog.askopenfilename()
 ######..................***Start of font data functions***....................
 
 
@@ -115,9 +118,11 @@ def name_extraction(text):
 def dob_extraction(text):
     dob_condition = r"[0-3][0-9] [A-Z][a-z]{2} [1-3][0-9]{3}"
     dob = re.findall(dob_condition, text, re.M)
-    # print (birthday)
     if dob:
-        dob = str(dob[0])
+        sdob = str(dob[0])
+        dob = datetime.strptime(sdob, "%d %b %Y").strftime('%d %m %Y')
+        # print(dob)
+
     return dob
 
 #..................*************....................
@@ -143,7 +148,7 @@ def nid_extraction(text):
 
 
 # def fontData(img)
-img = read_font_image(image_path)
+img = read_font_image(font_image_path)
 img = thin_font(img)
 text = image_to_text(img)
 # print (text)
@@ -169,13 +174,12 @@ print (text)
 ######..................***Start of back data functions***....................
 
 
-image_path = filedialog.askopenfilename()
-input_image = cv2.resize(cv2.imread(image_path), None, fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
+input_image = cv2.resize(cv2.imread(back_image_path), None, fx=0.5, fy=0.5, interpolation=cv2.INTER_CUBIC)
 # input_image = cv2.resize(cv2.imread(image_path), None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
 
 
 def match_and_alignImage(imgPath , img):
-    per = 25
+    per = 40
     imgQuery = cv2.imread(imgPath)
     
     h,w,c = imgQuery.shape
@@ -218,6 +222,7 @@ def get_data(alignImage, roi):
 
 def get_address():
     roi_smart_back = [[(38, 350), (1294, 642), 'bText', 'Address']]
+    # roi_normal_back = [[(4, 128), (1196, 302), 'btext', 'AddNS']]
     roi_normal_back = [[(0, 252), (2042, 540), 'bText', 'AddNS']]
 
     path_normal_back_img = 'query_img\\nsBack.jpg'
@@ -225,10 +230,10 @@ def get_address():
     align_image = match_and_alignImage(path_normal_back_img, input_image)
     add = get_data(align_image, roi_normal_back)
     print(len(add))
-    if add == "":
+    if len(add) < 10:
         align_image = match_and_alignImage(path_smart_back_img, input_image)
         add = get_data(align_image, roi_smart_back)
-        print(add)
+        # print(add)
         return add
     else:
         # print(add)
