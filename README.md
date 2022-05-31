@@ -6,6 +6,8 @@ The project uses pytesseract module to convert image into text and regular expre
 - cv2
 - re
 - filedialog
+- Numpy
+- datetime
 
 ## How to run code in your windows machine
 
