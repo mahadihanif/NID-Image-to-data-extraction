@@ -2,9 +2,27 @@ import cv2
 import numpy as np
 import pytesseract
 import re
+import uuid
 from tkinter import filedialog 
 from datetime import datetime
 
+
+import shutil
+from fastapi import FastAPI, File, UploadFile
+from typing import List
+
+from requests import Response
+
+
+# app = FastAPI()
+
+# @app.post("/upload-img")
+# async def upload_image(images: List[UploadFile] = File(...)):
+#     # destination_file_path = "upload_images/"+files.filename # location to store files
+#     images[0].filename = f"{uuid.uuid4()}.jpg"
+#     contents = await images[0].read() # <-- Important!
+#     # return {"Result": "Success"}
+#     return Response(user)
 
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
@@ -82,18 +100,18 @@ def display(title, image):
 
 
 def name_extraction(text):
-    name_condition = r"\bName:.*"
+    name_condition = r"\bName.*"
     capital_name_condition = r"\b[A-Z][A-Z].*[A-Z][A-Z][A-Z]\b"
     name = re.findall(name_condition, text, re.M)
     capital_name = re.findall(capital_name_condition, text, re.M) 
-    # print(len(name))
+    # print("Name 0:::"+name[0])
     # print(len(capital_name))
     # print(capital_name)
     if len(name) >0:
         if len(name[0])>6:
             name = str(name[0]).replace(',','.')
-            name = re.split(':', name)[1]
-            name = re.sub("^\s", "", name)    
+            # name = re.split(':', name)[1]
+            name = name[6:]               
         elif len(capital_name)>0:
             for n in capital_name:
                 if len(n)>6:
@@ -102,8 +120,13 @@ def name_extraction(text):
                          
     elif len(capital_name)>0:
         for n in capital_name:
-            if len(n)>6& len(n)<20:
-                name = n
+            if len(n)>3 & len(n)<20:
+                if "." in n:
+                    # print("line124",n)
+                    name = n
+                    break
+                else:
+                    name = n
 
     else:
         name = 'None'
@@ -130,17 +153,25 @@ def dob_extraction(text):
 
 def nid_extraction(text):
     # id_no_condition = r"\d{17}|\d{13}|\d{10}|\d{3}\s\d{3}\s\d{4}"
-    id_no_condition = r"[0-9]{17}|[0-9]{13}|[0-9]{10}|[0-9]{3}\s[0-9]{3}\s[0-9]{4}"
+    id_no_condition = r"[0-9]{17}|[0-9]{13}|[0-9]{10}|[0-9]{3}\s[0-9]{3}\s[0-9]{4}|[0-9]{6}\s[0-9]{4}"
     id_no = re.findall(id_no_condition, text, re.M) 
+    
     if id_no:
         if len(id_no[0])==17:
             id_no = str(id_no[0])
+            id_no = id_no.replace(" ", "")
         elif len(id_no[0])==13:
             id_no = str(id_no[0])
+            id_no = id_no.replace(" ", "")
         elif len(id_no[0])==10:
             id_no = str(id_no[0])
+            id_no = id_no.replace(" ", "")
+        elif len(id_no[0])==11:
+            id_no = str(id_no[0])
+            id_no = id_no.replace(" ", "")
         elif len(id_no[0]) ==12:
-            id_no = str(id_no[0])   
+            id_no = str(id_no[0])
+            id_no = id_no.replace(" ", "")   
     else:
         id_no ="None"    
     return id_no
@@ -150,6 +181,7 @@ def nid_extraction(text):
 # def fontData(img)
 img = read_font_image(font_image_path)
 img = thin_font(img)
+cv2.imshow("fornt", img) 
 text = image_to_text(img)
 # print (text)
 
@@ -179,16 +211,16 @@ input_image = cv2.resize(cv2.imread(back_image_path), None, fx=0.5, fy=0.5, inte
 
 
 def match_and_alignImage(imgPath , img):
-    per = 40
+    per = 30
     imgQuery = cv2.imread(imgPath)
     
     h,w,c = imgQuery.shape
-    orb = cv2.ORB_create(5000)
+    orb = cv2.ORB_create(1000)
     kp1 , des1 = orb.detectAndCompute(imgQuery, None)
     kp2, des2 = orb.detectAndCompute(img, None)
     bf = cv2.BFMatcher(cv2.NORM_HAMMING)
     matches = bf.match(des2, des1)
-    matches = sorted(matches, key=lambda x: x.distance)
+    matches = sorted(matches, key=lambda x:x.distance)
     good = matches[:int(len(matches)*(per/100))]
 
     srcPoints = np.float32([kp2[m.queryIdx].pt for m in good]).reshape(-1,1,2)
