@@ -8,10 +8,10 @@ from datetime import datetime
 
 
 import shutil
-from fastapi import FastAPI, File, UploadFile
+# from fastapi import FastAPI, File, UploadFile
 from typing import List
 
-from requests import Response
+# from requests import Response
 
 
 # app = FastAPI()
@@ -25,8 +25,8 @@ from requests import Response
 #     return Response(user)
 
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-TESSDATA_PREFIX = r'C:\\Program Files\\Tesseract-OCR\\tessdata'
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Users\mahad\AppData\Local\Tesseract-OCR\tesseract.exe"
+# TESSDATA_PREFIX = r'C:\\Users\\mahad\\AppData\\Local\\Tesseract-OCR\\tessdata'
 # Storing image path 
 print("please select NID font image")
 font_image_path = filedialog.askopenfilename()
@@ -67,7 +67,49 @@ def read_font_image(img_path):
 
 #..................*************....................
 
-    adaptiv_threshold = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 109,29)       #Appling Adapting Threshold for better result............
+    adaptiv_threshold = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 109,26)       #Appling Adapting Threshold for better result............
+    return adaptiv_threshold
+
+#..................*************....................
+
+
+
+
+
+
+
+# Reading image file using cv2.imread function..............
+def read_font_image_ns(img_path):
+    img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+
+#..................*************....................
+    copy_img = img.copy()
+    lower = np.array([60,60,60])
+    higher = np.array([250,250,250])
+    mask = cv2.inRange(img, lower,higher)     
+    
+    cont, _= cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)       # Finding Bounding Box
+    # cont_img = cv2.drawContours(img, cont, -1,255,3)
+
+    c = max(cont, key=cv2.contourArea)      # Finding Max Contor.........
+    x,y,w,h = cv2.boundingRect(c)
+    # cv2.rectangle(img,(x,y), (x+w, y+h), (0,255,0),3)
+
+    cropped_img = copy_img[y:y+h, x:x+w]        # Cropping image..........
+    
+#..................*************....................
+
+    # cropped_img = cv2.resize(cropped_img, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+    cropped_img = cv2.resize(cropped_img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+
+
+#..................*************....................
+
+    gray_image = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)     #Converting image to BGR2GRAY color..................
+
+#..................*************....................
+
+    adaptiv_threshold = cv2.adaptiveThreshold(gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 89,15)       #Appling Adapting Threshold for better result............
     return adaptiv_threshold
 
 #..................*************....................
@@ -181,7 +223,7 @@ def nid_extraction(text):
 # def fontData(img)
 img = read_font_image(font_image_path)
 img = thin_font(img)
-cv2.imshow("fornt", img) 
+# cv2.imshow("fornt1", img) 
 text = image_to_text(img)
 # print (text)
 
@@ -212,13 +254,13 @@ input_image = cv2.resize(cv2.imread(back_image_path), None, fx=0.5, fy=0.5, inte
 
 def match_and_alignImage(imgPath , img):
     per = 30
-    imgQuery = cv2.imread(imgPath)
+    imgQuery = cv2.imread(imgPath, cv2.IMREAD_GRAYSCALE)
     
-    h,w,c = imgQuery.shape
+    h,w = imgQuery.shape
     orb = cv2.ORB_create(1000)
     kp1 , des1 = orb.detectAndCompute(imgQuery, None)
     kp2, des2 = orb.detectAndCompute(img, None)
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING2, True)
     matches = bf.match(des2, des1)
     matches = sorted(matches, key=lambda x:x.distance)
     good = matches[:int(len(matches)*(per/100))]
@@ -291,17 +333,60 @@ dob = dob_extraction(text)
 nid = nid_extraction(text)
 add = get_address()
 
-if name:
-    user["Name"] = name
 
-if dob:
-    user["Date of Birth"] = dob   
+if len(name) ==0 or len(dob) == 0 or len(nid)==0:
+    #call non smart thereshold
+    
+    # def fontData(img)
+    img = read_font_image_ns(font_image_path)
+    img = thin_font(img)
+    cv2.imshow("fornt2", img) 
+    text = image_to_text(img)
+    print ("last------------------------\n"+text)
 
-if nid:
-    user["NID No"] = nid
-if add:
-    add = str(add).replace('\n','')
-    user["Address"] = add
+    #Removing All single charecter from text...............
+    text = re.sub(r'\b[a-zA-Z]\b','', text)
+
+    name = name_extraction(text)
+    dob = dob_extraction(text)
+    nid = nid_extraction(text)
+
+    if name:
+        user["Name"] = name
+
+    if dob:
+        user["Date of Birth"] = dob   
+
+    if nid:
+        user["NID No"] = nid
+    
+else:
+    if name:
+        user["Name"] = name
+
+    if dob:
+        user["Date of Birth"] = dob   
+
+    if nid:
+        user["NID No"] = nid
+    # user["Name"] = name
+    # user["Date of Birth"] = dob
+    # user["NID No"] = nid
+
+
+
+
+    # if name:
+    #     user["Name"] = name
+
+    # if dob:
+    #     user["Date of Birth"] = dob   
+
+    # if nid:
+    #     user["NID No"] = nid
+    if add:
+        add = str(add).replace('\n','')
+        user["Address"] = add
 
 
 
